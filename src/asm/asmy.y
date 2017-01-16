@@ -799,18 +799,40 @@ incbin			:	T_POP_INCBIN string
 
 charmap			:	T_POP_CHARMAP string ',' string
 					{
-						if(charmap_Add($2, $4[0] & 0xFF) == -1)
+						if($4[0] > 0xFF)
 						{
-							fprintf(stderr, "Error parsing charmap. Either you've added too many (%i), or the input character length is too long (%i)' : %s\n", MAXCHARMAPS, CHARMAPLENGTH, strerror(errno));
-							yyerror("Error parsing charmap.");
+							if(charmap_Add_UWORD($2, $4[0] & 0xFFFF) == -1)
+							{
+								fprintf(stderr, "Error parsing charmap. Either you've added too many (%i), or the input character length is too long (%i)' : %s\n", MAXCHARMAPS, CHARMAPLENGTH, strerror(errno));
+								yyerror("Error parsing charmap.");
+							}
+						}
+						else
+						{
+							if(charmap_Add_UWORD($2, $4[0] & 0xFFFF) == -1)
+							{
+								fprintf(stderr, "Error parsing charmap. Either you've added too many (%i), or the input character length is too long (%i)' : %s\n", MAXCHARMAPS, CHARMAPLENGTH, strerror(errno));
+								yyerror("Error parsing charmap.");
+							}
 						}
 					}
 				|	T_POP_CHARMAP string ',' const
 					{
-						if(charmap_Add($2, $4 & 0xFF) == -1)
+						if($4 > 0xFF)
 						{
-							fprintf(stderr, "Error parsing charmap. Either you've added too many (%i), or the input character length is too long (%i)' : %s\n", MAXCHARMAPS, CHARMAPLENGTH, strerror(errno));
-							yyerror("Error parsing charmap.");
+							if(charmap_Add_UWORD($2, $4 & 0xFFFF) == -1)
+							{
+								fprintf(stderr, "Error parsing charmap. Either you've added too many (%i), or the input character length is too long (%i)' : %s\n", MAXCHARMAPS, CHARMAPLENGTH, strerror(errno));
+								yyerror("Error parsing charmap.");
+							}
+						}
+						else
+						{
+							if(charmap_Add_UWORD($2, $4 & 0xFFFF) == -1)
+							{
+								fprintf(stderr, "Error parsing charmap. Either you've added too many (%i), or the input character length is too long (%i)' : %s\n", MAXCHARMAPS, CHARMAPLENGTH, strerror(errno));
+								yyerror("Error parsing charmap.");
+							}
 						}
 					}
 ;

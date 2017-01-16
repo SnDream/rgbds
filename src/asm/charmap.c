@@ -170,8 +170,74 @@ charmap_Add(char *input, UBYTE output)
 }
 
 int
+charmap_Add_UWORD(char *input, UWORD output)
+{
+	int i, input_length;
+	char temp1i[CHARMAPLENGTH + 1], temp2i[CHARMAPLENGTH + 1];
+	UWORD temp1o = 0,temp2o = 0;
+
+	struct Charmap *charmap;
+
+	if (pCurrentSection) {
+		if (pCurrentSection->charmap) {
+			charmap = pCurrentSection->charmap;
+		} else {
+			if ((charmap = calloc(1, sizeof(struct Charmap))) ==
+			    NULL) {
+				fatalerror("Not enough memory for charmap");
+			}
+			pCurrentSection->charmap = charmap;
+		}
+	} else {
+		charmap = &globalCharmap;
+	}
+
+	if (nPass == 2) {
+		return charmap->count;
+	}
+
+	if (charmap->count > MAXCHARMAPS || strlen(input) > CHARMAPLENGTH) {
+		return -1;
+	}
+
+	input_length = strlen(input);
+	if (input_length > 1) {
+		i = 0;
+		while (i < charmap->count + 1) {
+			if (input_length > strlen(charmap->input[i])) {
+				memcpy(temp1i, charmap->input[i],
+				    CHARMAPLENGTH + 1);
+				memcpy(charmap->input[i], input, input_length);
+				temp1o = charmap->output[i];
+				charmap->output[i] = output;
+				i++;
+				break;
+			}
+			i++;
+		}
+		while (i < charmap->count + 1) {
+			memcpy(temp2i, charmap->input[i], CHARMAPLENGTH + 1);
+			memcpy(charmap->input[i], temp1i, CHARMAPLENGTH + 1);
+			memcpy(temp1i, temp2i, CHARMAPLENGTH + 1);
+			temp2o = charmap->output[i];
+			charmap->output[i] = temp1o;
+			temp1o = temp2o;
+			i++;
+		}
+		memcpy(charmap->input[charmap->count + 1], temp1i,
+		    CHARMAPLENGTH + 1);
+		charmap->output[charmap->count + 1] = temp1o;
+	} else {
+		memcpy(charmap->input[charmap->count], input, input_length);
+		charmap->output[charmap->count] = output;
+	}
+	return ++charmap->count;
+}
+
+int
 charmap_Convert(char **input)
 {
+	int optsize =1;
 	struct Charmap *charmap;
 
 	char outchar[CHARMAPLENGTH + 1];
@@ -184,7 +250,7 @@ charmap_Convert(char **input)
 		charmap = &globalCharmap;
 	}
 
-	if ((buffer = malloc(strlen(*input))) == NULL) {
+	if ((buffer = malloc(strlen(*input)*2)) == NULL) {
 		fatalerror("Not enough memory for buffer");
 	}
 
@@ -194,20 +260,33 @@ charmap_Convert(char **input)
 		for (i = 0; i < charmap->count; i++) {
 			j = strlen(charmap->input[i]);
 			if (memcmp(*input, charmap->input[i], j) == 0) {
-				outchar[0] = charmap->output[i];
-				outchar[1] = 0;
+				if(charmap->output[i]&0xFF00){
+					outchar[0] = ((charmap->output[i])>>8)&0xFF;
+					outchar[1] = (charmap->output[i])&0xFF;
+					outchar[2] = 0;
+					optsize =2;
+				} else {
+					outchar[0] = charmap->output[i]&0xFF;
+					outchar[1] = 0;
+					optsize= 1;
+				}
 				break;
 			}
 			j = 0;
 		}
 		if (!j) {
 			j = readUTF8Char(outchar, *input);
+			optsize= 1;
 		}
 		if (!outchar[0]) {
 			buffer[length++] = 0;
 		} else {
 			for (i = 0; outchar[i]; i++) {
 				buffer[length++] = outchar[i];
+			}
+			if((optsize ==2) && (!outchar[1]) ){
+				buffer[length++] = 0;
+				optsize= 1;
 			}
 		}
 		*input += j;
