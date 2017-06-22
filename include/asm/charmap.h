@@ -8,9 +8,6 @@ struct Charmap {
 	int count;
 	char input[MAXCHARMAPS][CHARMAPLENGTH + 1];
 	UWORD output[MAXCHARMAPS];
-	//char output[MAXCHARMAPS];
-	//char output2[MAXCHARMAPS];
-	//char isUWORD[MAXCHARMAPS];
 };
 
 int readUTF8Char(char *destination, char *source);
