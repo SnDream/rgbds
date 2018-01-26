@@ -1,19 +1,19 @@
 #ifndef RGBDS_ASM_CHARMAP_H
 #define RGBDS_ASM_CHARMAP_H
 
-#define MAXCHARMAPS	8192
-#define CHARMAPLENGTH	8
+#include <stdint.h>
+
+#define MAXCHARMAPS	16384
+#define CHARMAPLENGTH	16
 
 struct Charmap {
-	int count;
+	int32_t count;
 	char input[MAXCHARMAPS][CHARMAPLENGTH + 1];
-	UWORD output[MAXCHARMAPS];
+	uint16_t output[MAXCHARMAPS];
 };
 
-int readUTF8Char(char *destination, char *source);
-void charmap_Sort();
-int charmap_Add(char *input, UBYTE output);
-int charmap_Add_UWORD(char *input, UWORD output);
-int charmap_Convert(char **input);
+int32_t readUTF8Char(char *destination, char *source);
+int32_t charmap_Add(char *input, uint16_t output);
+int32_t charmap_Convert(char **input);
 
-#endif
+#endif /* RGBDS_ASM_CHARMAP_H */

@@ -14,22 +14,23 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <getopt.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#include "extern/version.h"
+
 #include "gfx/main.h"
 
-static void
-usage(void)
+static void print_usage(void)
 {
 	printf(
-"usage: rgbgfx [-DFfhPTuv] [-d #] [-o outfile] [-p palfile] [-t mapfile]\n"
-"[-x #] infile\n");
+"usage: rgbgfx [-DFfhPTuVv] [-d #] [-o outfile] [-p palfile] [-t mapfile]\n"
+"              [-x #] infile\n");
 	exit(1);
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int ch, size;
 	struct Options opts = {0};
@@ -39,9 +40,8 @@ main(int argc, char *argv[])
 	char *ext;
 	const char *errmsg = "Warning: The PNG's %s setting is not the same as the setting defined on the command line.";
 
-	if (argc == 1) {
-		usage();
-	}
+	if (argc == 1)
+		print_usage();
 
 	opts.mapfile = "";
 	opts.palfile = "";
@@ -49,27 +49,30 @@ main(int argc, char *argv[])
 
 	depth = 2;
 
-	while((ch = getopt(argc, argv, "DvFfd:hx:Tt:uPp:o:")) != -1) {
-		switch(ch) {
+	while ((ch = getopt(argc, argv, "Dd:Ffho:Tt:uPp:Vvx:")) != -1) {
+		switch (ch) {
 		case 'D':
 			opts.debug = true;
 			break;
-		case 'v':
-			opts.verbose = true;
+		case 'd':
+			depth = strtoul(optarg, NULL, 0);
 			break;
 		case 'F':
 			opts.hardfix = true;
 		case 'f':
 			opts.fix = true;
 			break;
-		case 'd':
-			depth = strtoul(optarg, NULL, 0);
-			break;
 		case 'h':
 			opts.horizontal = true;
 			break;
-		case 'x':
-			opts.trim = strtoul(optarg, NULL, 0);
+		case 'o':
+			opts.outfile = optarg;
+			break;
+		case 'P':
+			opts.palout = true;
+			break;
+		case 'p':
+			opts.palfile = optarg;
 			break;
 		case 'T':
 			opts.mapout = true;
@@ -80,31 +83,31 @@ main(int argc, char *argv[])
 		case 'u':
 			opts.unique = true;
 			break;
-		case 'P':
-			opts.palout = true;
+		case 'V':
+			printf("rgbgfx %s\n", get_package_version_string());
+			exit(0);
+		case 'v':
+			opts.verbose = true;
 			break;
-		case 'p':
-			opts.palfile = optarg;
-			break;
-		case 'o':
-			opts.outfile = optarg;
+		case 'x':
+			opts.trim = strtoul(optarg, NULL, 0);
 			break;
 		default:
-			usage();
+			print_usage();
+			/* NOTREACHED */
 		}
 	}
 	argc -= optind;
 	argv += optind;
 
-	if (argc == 0) {
-		usage();
-	}
+	if (argc == 0)
+		print_usage();
 
 	opts.infile = argv[argc - 1];
 
-	if (depth != 1 && depth != 2) {
+	if (depth != 1 && depth != 2)
 		errx(1, "Depth option must be either 1 or 2.");
-	}
+
 	colors = 1 << depth;
 
 	input_png_file(opts, &png);
@@ -115,82 +118,77 @@ main(int argc, char *argv[])
 	get_text(&png);
 
 	if (png.horizontal != opts.horizontal) {
-		if (opts.verbose) {
+		if (opts.verbose)
 			warnx(errmsg, "horizontal");
-		}
-		if (opts.hardfix) {
+
+		if (opts.hardfix)
 			png.horizontal = opts.horizontal;
-		}
-	}
-	if (png.horizontal) {
-		opts.horizontal = png.horizontal;
 	}
 
+	if (png.horizontal)
+		opts.horizontal = png.horizontal;
+
 	if (png.trim != opts.trim) {
-		if (opts.verbose) {
+		if (opts.verbose)
 			warnx(errmsg, "trim");
-		}
-		if (opts.hardfix) {
+
+		if (opts.hardfix)
 			png.trim = opts.trim;
-		}
 	}
-	if (png.trim) {
+
+	if (png.trim)
 		opts.trim = png.trim;
-	}
+
 	if (opts.trim > png.width / 8 - 1) {
-		errx(1, "Trim (%i) for input png file '%s' too large (max: %i)", opts.trim, opts.infile, png.width / 8 - 1);
+		errx(1, "Trim (%i) for input png file '%s' too large (max: %i)",
+		     opts.trim, opts.infile, png.width / 8 - 1);
 	}
 
 	if (strcmp(png.mapfile, opts.mapfile) != 0) {
-		if (opts.verbose) {
+		if (opts.verbose)
 			warnx(errmsg, "tilemap file");
-		}
-		if (opts.hardfix) {
+
+		if (opts.hardfix)
 			png.mapfile = opts.mapfile;
-		}
 	}
-	if (!*opts.mapfile) {
+	if (!*opts.mapfile)
 		opts.mapfile = png.mapfile;
-	}
 
 	if (png.mapout != opts.mapout) {
-		if (opts.verbose) {
+		if (opts.verbose)
 			warnx(errmsg, "tilemap file");
-		}
-		if (opts.hardfix) {
+
+		if (opts.hardfix)
 			png.mapout = opts.mapout;
-		}
 	}
-	if (png.mapout) {
+	if (png.mapout)
 		opts.mapout = png.mapout;
-	}
 
 	if (strcmp(png.palfile, opts.palfile) != 0) {
-		if (opts.verbose) {
+		if (opts.verbose)
 			warnx(errmsg, "palette file");
-		}
-		if (opts.hardfix) {
+
+		if (opts.hardfix)
 			png.palfile = opts.palfile;
-		}
 	}
-	if (!*opts.palfile) {
+	if (!*opts.palfile)
 		opts.palfile = png.palfile;
-	}
 
 	if (png.palout != opts.palout) {
-		if (opts.verbose) {
+		if (opts.verbose)
 			warnx(errmsg, "palette file");
-		}
-		if (opts.hardfix) {
+
+		if (opts.hardfix)
 			png.palout = opts.palout;
-		}
-	}
-	if (png.palout) {
-		opts.palout = png.palout;
 	}
 
+	if (png.palout)
+		opts.palout = png.palout;
+
 	if (!*opts.mapfile && opts.mapout) {
-		if ((ext = strrchr(opts.infile, '.')) != NULL) {
+		ext = strrchr(opts.infile, '.');
+
+		if (ext != NULL) {
 			size = ext - opts.infile + 9;
 			opts.mapfile = malloc(size);
 			strncpy(opts.mapfile, opts.infile, size);
@@ -204,7 +202,9 @@ main(int argc, char *argv[])
 	}
 
 	if (!*opts.palfile && opts.palout) {
-		if ((ext = strrchr(opts.infile, '.')) != NULL) {
+		ext = strrchr(opts.infile, '.');
+
+		if (ext != NULL) {
 			size = ext - opts.infile + 5;
 			opts.palfile = malloc(size);
 			strncpy(opts.palfile, opts.infile, size);
@@ -227,17 +227,14 @@ main(int argc, char *argv[])
 		create_tilemap(opts, &gb, &tilemap);
 	}
 
-	if (*opts.outfile) {
+	if (*opts.outfile)
 		output_file(opts, gb);
-	}
 
-	if (*opts.mapfile) {
+	if (*opts.mapfile)
 		output_tilemap_file(opts, tilemap);
-	}
 
-	if (*opts.palfile) {
+	if (*opts.palfile)
 		output_palette_file(opts, png);
-	}
 
 	if (opts.fix || opts.debug) {
 		set_text(&png);

@@ -1,30 +1,34 @@
-#ifndef	RGBDS_MAIN_H
-#define	RGBDS_MAIN_H
+#ifndef RGBDS_MAIN_H
+#define RGBDS_MAIN_H
 
 #include <stdbool.h>
+#include <stdint.h>
+
 #include "extern/stdnoreturn.h"
 
 struct sOptions {
 	char gbgfx[4];
 	char binary[2];
-	SLONG fillchar;
+	int32_t fillchar;
 	bool verbose;
 	bool haltnop;
 	bool exportall;
-	bool warnings; /* true to enable warnings, false to disable them. */
-	    //-1 == random
+	bool warnings; /* True to enable warnings, false to disable them. */
 };
 
 extern char *tzNewMacro;
-extern ULONG ulNewMacroSize;
-extern SLONG nGBGfxID;
-extern SLONG nBinaryID;
+extern uint32_t ulNewMacroSize;
+extern int32_t nGBGfxID;
+extern int32_t nBinaryID;
 
 extern struct sOptions DefaultOptions;
 extern struct sOptions CurrentOptions;
-extern void opt_Push(void);
-extern void opt_Pop(void);
-extern void opt_Parse(char *s);
+
+extern FILE *dependfile;
+
+void opt_Push(void);
+void opt_Pop(void);
+void opt_Parse(char *s);
 
 /*
  * Used for errors that compromise the whole assembly process by affecting the
@@ -34,6 +38,7 @@ extern void opt_Parse(char *s);
  * when it fails to allocate memory).
  */
 noreturn void fatalerror(const char *fmt, ...);
+
 /*
  * Used for errors that make it impossible to assemble correctly, but don't
  * affect the following code. The code will fail to assemble but the user will
@@ -41,17 +46,18 @@ noreturn void fatalerror(const char *fmt, ...);
  * once.
  */
 void yyerror(const char *fmt, ...);
+
 /*
  * Used to warn the user about problems that don't prevent the generation of
  * valid code.
  */
 void warning(const char *fmt, ...);
 
-#define	YY_FATAL_ERROR fatalerror
+#define YY_FATAL_ERROR fatalerror
 
-#ifdef	YYLMAX
-#undef	YYLMAX
+#ifdef YYLMAX
+#undef YYLMAX
 #endif
 #define YYLMAX 65536
 
-#endif
+#endif /* RGBDS_MAIN_H */
