@@ -1,11 +1,13 @@
-#ifndef	RGBDS_LINK_MAPFILE_H
-#define	RGBDS_LINK_MAPFILE_H
+#ifndef RGBDS_LINK_MAPFILE_H
+#define RGBDS_LINK_MAPFILE_H
 
-extern void SetMapfileName(char *name);
-extern void SetSymfileName(char *name);
-extern void CloseMapfile(void);
-extern void MapfileWriteSection(struct sSection * pSect);
-extern void MapfileInitBank(SLONG bank);
-extern void MapfileCloseBank(SLONG slack);
+#include <stdint.h>
 
-#endif
+void SetMapfileName(char *name);
+void SetSymfileName(char *name);
+void CloseMapfile(void);
+void MapfileWriteSection(const struct sSection *pSect);
+void MapfileInitBank(int32_t bank);
+void MapfileCloseBank(int32_t slack);
+
+#endif /* RGBDS_LINK_MAPFILE_H */

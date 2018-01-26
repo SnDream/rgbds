@@ -22,19 +22,18 @@
 #include <unistd.h>
 
 #include "extern/err.h"
+#include "extern/version.h"
 
-static void
-usage(void)
+static void print_usage(void)
 {
 	printf(
-"usage: rgbfix [-Ccjsv] [-i game_id] [-k licensee_str] [-l licensee_id]\n"
+"usage: rgbfix [-CcjsVv] [-i game_id] [-k licensee_str] [-l licensee_id]\n"
 "              [-m mbc_type] [-n rom_version] [-p pad_value] [-r ram_size]\n"
 "              [-t title_str] file\n");
 	exit(1);
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	FILE *rom;
 	int ch;
@@ -63,13 +62,13 @@ main(int argc, char *argv[])
 	char *id; /* game ID in ASCII */
 	char *newlicensee; /* new licensee ID, two ASCII characters */
 
-	int licensee;  /* old licensee ID */
-	int cartridge; /* cartridge hardware ID */
-	int ramsize;   /* RAM size ID */
-	int version;   /* mask ROM version number */
-	int padvalue;  /* to pad the rom with if it changes size */
+	int licensee = 0;  /* old licensee ID */
+	int cartridge = 0; /* cartridge hardware ID */
+	int ramsize = 0;   /* RAM size ID */
+	int version = 0;   /* mask ROM version number */
+	int padvalue = 0;  /* to pad the rom with if it changes size */
 
-	while ((ch = getopt(argc, argv, "Cci:jk:l:m:n:p:sr:t:v")) != -1) {
+	while ((ch = getopt(argc, argv, "Cci:jk:l:m:n:p:sr:t:Vv")) != -1) {
 		switch (ch) {
 		case 'C':
 			coloronly = true;
@@ -80,10 +79,9 @@ main(int argc, char *argv[])
 		case 'i':
 			setid = true;
 
-			if (strlen(optarg) != 4) {
-				errx(1, "Game ID %s must be exactly 4 "
-				    "characters", optarg);
-			}
+			if (strlen(optarg) != 4)
+				errx(1, "Game ID %s must be exactly 4 characters",
+				     optarg);
 
 			id = optarg;
 			break;
@@ -93,10 +91,9 @@ main(int argc, char *argv[])
 		case 'k':
 			setnewlicensee = true;
 
-			if (strlen(optarg) != 2) {
-				errx(1, "New licensee code %s is not the "
-				    "correct length of 2 characters", optarg);
-			}
+			if (strlen(optarg) != 2)
+				errx(1, "New licensee code %s is not the correct length of 2 characters",
+				     optarg);
 
 			newlicensee = optarg;
 			break;
@@ -104,61 +101,59 @@ main(int argc, char *argv[])
 			setlicensee = true;
 
 			licensee = strtoul(optarg, &ep, 0);
-			if (optarg[0] == '\0' || *ep != '\0') {
+			if (optarg[0] == '\0' || *ep != '\0')
 				errx(1, "Invalid argument for option 'l'");
-			}
-			if (licensee < 0 || licensee > 0xFF) {
-				errx(1, "Argument for option 'l' must be "
-				    "between 0 and 255");
-			}
+
+			if (licensee < 0 || licensee > 0xFF)
+				errx(1, "Argument for option 'l' must be between 0 and 255");
+
 			break;
 		case 'm':
 			setcartridge = true;
 
 			cartridge = strtoul(optarg, &ep, 0);
-			if (optarg[0] == '\0' || *ep != '\0') {
+			if (optarg[0] == '\0' || *ep != '\0')
 				errx(1, "Invalid argument for option 'm'");
-			}
-			if (cartridge < 0 || cartridge > 0xFF) {
-				errx(1, "Argument for option 'm' must be "
-				    "between 0 and 255");
-			}
+
+			if (cartridge < 0 || cartridge > 0xFF)
+				errx(1, "Argument for option 'm' must be between 0 and 255");
+
 			break;
 		case 'n':
 			setversion = true;
 
 			version = strtoul(optarg, &ep, 0);
-			if (optarg[0] == '\0' || *ep != '\0') {
+
+			if (optarg[0] == '\0' || *ep != '\0')
 				errx(1, "Invalid argument for option 'n'");
-			}
-			if (version < 0 || version > 0xFF) {
-				errx(1, "Argument for option 'n' must be "
-				    "between 0 and 255");
-			}
+
+			if (version < 0 || version > 0xFF)
+				errx(1, "Argument for option 'n' must be between 0 and 255");
+
 			break;
 		case 'p':
 			resize = true;
 
 			padvalue = strtoul(optarg, &ep, 0);
-			if (optarg[0] == '\0' || *ep != '\0') {
+
+			if (optarg[0] == '\0' || *ep != '\0')
 				errx(1, "Invalid argument for option 'p'");
-			}
-			if (padvalue < 0 || padvalue > 0xFF) {
-				errx(1, "Argument for option 'p' must be "
-				    "between 0 and 255");
-			}
+
+			if (padvalue < 0 || padvalue > 0xFF)
+				errx(1, "Argument for option 'p' must be between 0 and 255");
+
 			break;
 		case 'r':
 			setramsize = true;
 
 			ramsize = strtoul(optarg, &ep, 0);
-			if (optarg[0] == '\0' || *ep != '\0') {
+
+			if (optarg[0] == '\0' || *ep != '\0')
 				errx(1, "Invalid argument for option 'r'");
-			}
-			if (ramsize < 0 || ramsize > 0xFF) {
-				errx(1, "Argument for option 'r' must be "
-				    "between 0 and 255");
-			}
+
+			if (ramsize < 0 || ramsize > 0xFF)
+				errx(1, "Argument for option 'r' must be between 0 and 255");
+
 			break;
 		case 's':
 			super = true;
@@ -166,22 +161,24 @@ main(int argc, char *argv[])
 		case 't':
 			settitle = true;
 
-			if (strlen(optarg) > 16) {
-				errx(1, "Title %s is greater than the "
-				    "maximum of 16 characters", optarg);
-			}
+			if (strlen(optarg) > 16)
+				errx(1, "Title \"%s\" is greater than the maximum of 16 characters",
+				     optarg);
 
 			if (strlen(optarg) == 16)
-				warnx("Title %s is 16 chars, it is best to "
-				    "keep it to 15 or fewer", optarg);
+				warnx("Title \"%s\" is 16 chars, it is best to keep it to 15 or fewer",
+				      optarg);
 
 			title = optarg;
 			break;
+		case 'V':
+			printf("rgbfix %s\n", get_package_version_string());
+			exit(0);
 		case 'v':
 			validate = true;
 			break;
 		default:
-			usage();
+			print_usage();
 			/* NOTREACHED */
 		}
 	}
@@ -190,15 +187,16 @@ main(int argc, char *argv[])
 	argv += optind;
 
 	if (argc == 0)
-		usage();
+		print_usage();
 
 	/*
 	 * Open the ROM file
 	 */
 
-	if ((rom = fopen(argv[argc - 1], "rb+")) == NULL) {
+	rom = fopen(argv[argc - 1], "rb+");
+
+	if (rom == NULL)
 		err(1, "Error opening file %s", argv[argc - 1]);
-	}
 
 	/*
 	 * Write changes to ROM
@@ -262,7 +260,7 @@ main(int argc, char *argv[])
 		 * characters).
 		 */
 
-		fseek(rom,0x13F,SEEK_SET);
+		fseek(rom, 0x13F, SEEK_SET);
 		fwrite(id, 1, 4, rom);
 	}
 
@@ -328,8 +326,7 @@ main(int argc, char *argv[])
 		 */
 
 		if (!setlicensee)
-			warnx("You should probably set both '-s' and "
-			    "'-l 0x33'");
+			warnx("You should probably set both '-s' and '-l 0x33'");
 
 		fseek(rom, 0x146, SEEK_SET);
 		fputc(3, rom);
@@ -356,6 +353,7 @@ main(int argc, char *argv[])
 		long romsize, newsize;
 		int headbyte;
 		uint8_t *buf;
+
 		fseek(rom, 0, SEEK_END);
 		romsize = ftell(rom);
 		newsize = 0x8000;
@@ -429,9 +427,8 @@ main(int argc, char *argv[])
 		 * Offset 0x14D: Header Checksum
 		 */
 
-		uint8_t headcksum;
+		uint8_t headcksum = 0;
 
-		headcksum = 0;
 		fseek(rom, 0x134, SEEK_SET);
 		for (int i = 0; i < (0x14D - 0x134); ++i)
 			headcksum = headcksum - fgetc(rom) - 1;
@@ -443,15 +440,14 @@ main(int argc, char *argv[])
 		 * Offset 0x14E–0x14F: Global Checksum
 		 */
 
-		uint16_t globalcksum;
-
-		globalcksum = 0;
+		uint16_t globalcksum = 0;
 
 		rewind(rom);
 		for (int i = 0; i < 0x14E; ++i)
 			globalcksum += fgetc(rom);
 
 		int byte;
+
 		fseek(rom, 0x150, SEEK_SET);
 		while ((byte = fgetc(rom)) != EOF)
 			globalcksum += byte;

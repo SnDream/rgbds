@@ -1,4 +1,4 @@
-.\" Copyright (c) 2017 Antonio Nino Diaz <antonio_nd@outlook.com>
+.\" Copyright (c) 2017-2018 Antonio Nino Diaz <antonio_nd@outlook.com>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -12,7 +12,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd April 17, 2017
+.Dd January 7, 2018
 .Dt RGBASM 5
 .Os RGBDS Manual
 .Sh NAME
@@ -275,7 +275,7 @@ Alternatively you can use = as a synonym for SET.
 .Pp
 .Dl COUNT = 2
 .Pp
-.It Sy RSSET , RERESET , RB , RW
+.It Sy RSSET , RSRESET , RB , RW
 .Pp
 The RS group of commands is a handy way of defining structures:
 .Pp
@@ -307,6 +307,8 @@ There are four commands in the RS group of commands:
 .Ic _RS No and adds Ar constexpr No to Ic _RS .
 .It Ic RW Ar constexpr Ta Sets the preceding symbol to
 .Ic _RS No and adds Ar constexpr No * 2 to Ic _RS.
+.It Ic RL Ar constexpr Ta Sets the preceding symbol to
+.Ic _RS No and adds Ar constexpr No * 4 to Ic _RS.
 .El
 .Pp
 Note that a colon (:) following the symbol-name is not allowed.
@@ -547,36 +549,46 @@ The following symbols are defined by the assembler:
 .It Ic EQU Ta Ic __UTC_HOUR__ Ta Ta Current hour, 0-23
 .It Ic EQU Ta Ic __UTC_MINUTE__ Ta Ta Current minute, 0-59
 .It Ic EQU Ta Ic __UTC_SECOND__ Ta Ta Current second, 0-59
+.It Ic EQU Ta Ic __RGBDS_MAJOR__ Ta Ta Major version number of RGBDS.
+.It Ic EQU Ta Ic __RGBDS_MINOR__ Ta Ta Minor version number of RGBDS.
+.It Ic EQU Ta Ic __RGBDS_PATCH__ Ta Ta Patch version number of RGBDS.
 .El
 .Pp
 .Sh DEFINING DATA
 .Ss Defining constant data
 .Ic DB
 defines a list of bytes that will be stored in the final image.
-Ideal for tables and text.
+Ideal for tables and text (which is not zero-terminated).
 .Pp
 .Dl DB 1,2,3,4,\[dq]This is a string\[dq]
 .Pp
 Alternatively, you can use
 .Ic DW
-to store a list of words.
+to store a list of words (16-bits) or
+.Ic DL
+to store a list of doublewords/longs (32-bits).
 Strings are not allowed as arguments to
-.Ic DW .
+.Ic DW
+and
+.Ic DL .
 .Pp
 You can also use
-.Ic DB
-and
+.Ic DB ,
 .Ic DW
-without arguments.
-This works exactly like
-.Sy DS 1
 and
+.Ic DL
+without arguments, or leaving empty elements at any point in the list.
+This works exactly like
+.Sy DS 1 ,
 .Sy DS 2
+and
+.Sy DS 4
 respectively.
 Consequently,
-.Ic DB
-and
+.Ic DB ,
 .Ic DW
+and
+.Ic DL
 can be used in a
 .Sy WRAM0 No / Sy WRAMX No / Sy HRAM No / Sy VRAM No / Sy SRAM
 section.
@@ -586,9 +598,10 @@ allocates a number of bytes.
 The content is undefined.
 This is the preferred method of allocationg space in a RAM section.
 You can, however, use
-.Ic DB
-and
+.Ic DB ,
 .Ic DW
+and
+.Ic DL
 without any arguments instead.
 .Pp
 .Dl DS str_SIZEOF ;allocate str_SIZEOF bytes
@@ -610,6 +623,41 @@ You can also include only part of a file with
 The example below includes 256 bytes from data.bin starting from byte 78.
 .Pp
 .Dl INCBIN \[dq]data.bin\[dq],78,256
+.Ss Unions
+Unions allow multiple memory allocations to share the same space in memory,
+like unions in C.
+This allows you to easily reuse memory for different purposes, depending on
+the game's state.
+.Pp
+You create unions using the
+.Ic UNION ,
+.Ic NEXTU
+and
+.Ic ENDU
+keywords.
+.Ic NEXTU
+lets you create a new block of allocations, and you may use it as many times
+within a union as necessary.
+.Pp
+.Bd -literal -offset indent
+UNION
+Name: ds 8
+Nickname: ds 8
+NEXTU
+Health: dw
+Something: ds 3
+Lives: db
+NEXTU
+Temporary: ds 19
+ENDU
+.Ed
+.Pp
+This union will use up 19 bytes, as this is the size of the largest block
+(the last one, containing 'Temporary').
+Of course, as 'Name', 'Health', and 'Temporary' all point to the same memory
+locations, writes to any one of these will affect values read from the others.
+.Pp
+Unions may be used in any section, but code and data may not be included.
 .Sh THE MACRO LANGUAGE
 .Pp
 .Ss Printing things during assembly
@@ -702,27 +750,48 @@ calls infinitely (or until you run out of memory, whichever comes first).
 .Dl INCLUDE \[dq]irq.inc\[dq]
 .Pp
 .Ss Conditional assembling
-The three commands
+The four commands
 .Ic IF ,
-.Ic ELSE
+.Ic ELIF ,
+.Ic ELSE ,
 and
 .Ic ENDC
 are used to conditionally assemble parts of your file.
 This is a powerful feature commonly used in macros.
 .Pp
 .Bd -literal -offset indent
-IF 2+2==4
-PRINTT \[dq]2+2==4\[rs]n\[dq]
+IF NUM < 0
+  PRINTT \[dq]NUM < 0\[rs]n\[dq]
+ELIF NUM == 0
+  PRINTT \[dq]NUM == 0\[rs]n\[dq]
 ELSE
-PRINTT \[dq]2+2!=4\[rs]n\[dq]
+  PRINTT \[dq]NUM > 0\[rs]n\[dq]
 ENDC
 .Ed
 .Pp
 The
+.Ic ELIF
+and
 .Ic ELSE
-block is optional.
-.Ic IF No / Ic ELSE No / Ic ENDC
+blocks are optional.
+.Ic IF No / Ic ELIF No / Ic ELSE No / Ic ENDC
 blocks can be nested.
+.Pp
+Note that if an
+.Ic ELSE
+block is found before an
+.Ic ELIF
+block, the
+.Ic ELIF
+block will be ignored.
+All
+.Ic ELIF
+blocks must go before the
+.Ic ELSE
+block.
+Also, if there is more than one
+.Ic ELSE
+block, all of them but the first one are ignored.
 .Ss Integer and Boolean expressions
 An expression can be composed of many things.
 Expressions are always evaluated using signed 32-bit math.
@@ -900,9 +969,15 @@ There are a few other functions that do various useful things:
 .Pp
 .Bl -column ".Sy String" ".Sy String"
 .It Sy Name Ta Ta Ta Sy Operation
-.It Li BANK(label) Ta Returns the bank number label is in.
-The linker will have to resolve this so it can't be used when the expression has
-to be constant.
+.It Li BANK(\@/str/lbl) Ta Returns a bank number.
+If the argument is the symbol
+.Ic \@,
+this function returns the bank of the current section.
+If the argument is a string, it returns the bank of the section that has that
+name.
+If the argument is a label, it returns the bank number the label is in.
+For labels, as the linker has to resolve this, it can't be used when the
+expression has to be constant.
 .It Li DEF(label) Ta Returns TRUE if label has been defined.
 .It Li HIGH(r16/cnst/lbl) Ta Returns the top 8 bits of the operand if it is a
 label or constant, or the top 8-bit register if it is a 16-bit register.
@@ -954,6 +1029,15 @@ machine.
 .It Sx __ISO_8601_UTC__
 .It Sx __LINE__
 .It Sx __TIME__
+.It Sx __RGBDS_MAJOR__
+.It Sx __RGBDS_MINOR__
+.It Sx __RGBDS_PATCH__
+.It Sx __UTC_YEAR__
+.It Sx __UTC_MONTH__
+.It Sx __UTC_DAY__
+.It Sx __UTC_HOUR__
+.It Sx __UTC_MINUTE__
+.It Sx __UTC_SECOND__
 .It Sx _NARG
 .It Sx _PI
 .It Sx _RS
@@ -966,8 +1050,10 @@ machine.
 .It Sx DB
 .It Sx DEF
 .It Sx DIV
+.It Sx DL
 .It Sx DS
 .It Sx DW
+.It Sx ELIF
 .It Sx ELSE
 .It Sx ENDC
 .It Sx ENDM
@@ -996,6 +1082,7 @@ machine.
 .It Sx PUSHS
 .It Sx REPT
 .It Sx RB
+.It Sx RL
 .It Sx ROM0
 .It Sx ROMX
 .It Sx RSRESET

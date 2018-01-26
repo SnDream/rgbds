@@ -19,25 +19,29 @@
 
 %{
 #include <stdarg.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #include "extern/err.h"
+
 #include "link/mylink.h"
 #include "link/script.h"
 
 #include "parser.h"
 
+#include "types.h"
+
 extern int yyparse();
 
 /* File include stack. */
 
-#define	MAX_INCLUDE_DEPTH 8
+#define MAX_INCLUDE_DEPTH 8
 
-static int include_stack_ptr = 0;
+static int32_t include_stack_ptr;
 
 static YY_BUFFER_STATE include_stack[MAX_INCLUDE_DEPTH];
 static char include_path[MAX_INCLUDE_DEPTH][_MAX_PATH + 1];
-static int include_line[MAX_INCLUDE_DEPTH];
+static int32_t include_line[MAX_INCLUDE_DEPTH];
 
 static char linkerscript_path[_MAX_PATH + 1]; /* Base file */
 %}
@@ -45,14 +49,21 @@ static char linkerscript_path[_MAX_PATH + 1]; /* Base file */
 %%
 
 \"([^\\\"]|\\.)*\" {
-			if (strlen(yytext) > sizeof(yylval.s) - 1)
-				script_fatalerror("String is too long: %s\n.", yytext);
-			if (strlen(yytext) < 3) /* 2 quotes + 1 character */
-				script_fatalerror("String %s is invalid\n.", yytext);
+			if (strlen(yytext) > sizeof(yylval.s) - 1) {
+				script_fatalerror("String is too long: %s\n.",
+						  yytext);
+			}
 
-			yytext++; /* ignore first quote */
+			if (strlen(yytext) < 3) { /* 2 quotes + 1 character */
+				script_fatalerror("String %s is invalid\n.",
+						  yytext);
+			}
+
+			/* Ignore first quote */
+			yytext++;
 			strcpy(yylval.s, yytext);
-			yylval.s[strlen(yylval.s)-1] = '\0'; /* remove end quote */
+			/* Remove end quote */
+			yylval.s[strlen(yylval.s)-1] = '\0';
 
 			return STRING;
 		}
@@ -108,12 +119,11 @@ void script_Parse(const char * path)
 	} while (!feof(yyin));
 
 	fclose(yyin);
-
 }
 
 void script_IncludeFile(const char * path)
 {
-	if (include_stack_ptr == (MAX_INCLUDE_DEPTH-1))
+	if (include_stack_ptr == (MAX_INCLUDE_DEPTH - 1))
 		script_fatalerror("Includes nested too deeply.");
 
 	include_line[include_stack_ptr] = yylineno;
@@ -121,13 +131,13 @@ void script_IncludeFile(const char * path)
 
 	include_stack_ptr++;
 
-	yyin = fopen(path, "r" );
+	yyin = fopen(path, "r");
 
 	if (!yyin)
 		script_fatalerror("Couldn't open file \"%s\"", path);
 
 	strncpy(include_path[include_stack_ptr], path, sizeof(include_path[0]));
-	include_path[include_stack_ptr][sizeof(include_path[0])-1] = '\0';
+	include_path[include_stack_ptr][sizeof(include_path[0]) - 1] = '\0';
 
 	yy_switch_to_buffer(yy_create_buffer(yyin, YY_BUF_SIZE));
 	yylineno = 1;
@@ -148,7 +158,7 @@ void script_IncludeFile(const char * path)
 	unput('\n');
 }
 
-int script_IncludeDepthGet(void)
+int32_t script_IncludeDepthGet(void)
 {
 	return include_stack_ptr;
 }
@@ -166,7 +176,7 @@ void script_IncludePop(void)
 
 void script_PrintFileStack(void)
 {
-	int i = include_stack_ptr;
+	int32_t i = include_stack_ptr;
 
 	include_line[i] = yylineno;
 
