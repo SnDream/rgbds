@@ -1,4 +1,12 @@
 /*
+ * This file is part of RGBDS.
+ *
+ * Copyright (c) 1997-2018, Carsten Sorensen and RGBDS contributors.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/*
  * FileStack routines
  */
 
@@ -16,7 +24,6 @@
 #include "asm/symbol.h"
 
 #include "extern/err.h"
-#include "extern/strl.h"
 
 #include "types.h"
 
@@ -218,7 +225,7 @@ void fstk_AddIncludePath(char *s)
 	if (NextIncPath == MAXINCPATHS)
 		fatalerror("Too many include directories passed from command line");
 
-	if (strlcpy(IncludePaths[NextIncPath++], s, _MAX_PATH) >= _MAX_PATH)
+	if (snprintf(IncludePaths[NextIncPath++], _MAX_PATH, "%s", s) >= _MAX_PATH)
 		fatalerror("Include path too long '%s'", s);
 }
 
@@ -227,6 +234,9 @@ FILE *fstk_FindFile(char *fname)
 	char path[_MAX_PATH];
 	int32_t i;
 	FILE *f;
+
+	if (fname == NULL)
+		return NULL;
 
 	f = fopen(fname, "rb");
 
@@ -238,11 +248,17 @@ FILE *fstk_FindFile(char *fname)
 	}
 
 	for (i = 0; i < NextIncPath; ++i) {
-		if (strlcpy(path, IncludePaths[i], sizeof(path))
+		/*
+		 * The function snprintf() does not write more than `size` bytes
+		 * (including the terminating null byte ('\0')).  If the output
+		 * was truncated due to this limit, the return value is the
+		 * number of characters (excluding the terminating null byte)
+		 * which would have been written to the final string if enough
+		 * space had been available. Thus, a return value of `size` or
+		 * more means that the output was truncated.
+		 */
+		if (snprintf(path, sizeof(path), "%s%s", IncludePaths[i], fname)
 		    >= sizeof(path))
-			continue;
-
-		if (strlcat(path, fname, sizeof(path)) >= sizeof(path))
 			continue;
 
 		f = fopen(path, "rb");

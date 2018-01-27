@@ -1,3 +1,11 @@
+#
+# This file is part of RGBDS.
+#
+# Copyright (c) 1997-2018, Carsten Sorensen and RGBDS contributors.
+#
+# SPDX-License-Identifier: MIT
+#
+
 # User-defined variables
 
 Q		:= @
@@ -49,11 +57,8 @@ rgbasm_obj := \
 	src/asm/rpn.o \
 	src/asm/symbol.o \
 	src/extern/err.o \
-	src/extern/reallocarray.o \
-	src/extern/strlcpy.o \
-	src/extern/strlcat.o \
+	src/extern/utf8decoder.o \
 	src/extern/version.o
-
 
 src/asm/asmy.h: src/asm/asmy.c
 src/asm/locallex.o src/asm/globlex.o src/asm/lexer.o: src/asm/asmy.h
@@ -156,8 +161,8 @@ install: all
 # Target used to check the coding style of the whole codebase. '.y' and '.l'
 # files aren't checked, unfortunately...
 checkcodebase:
-	$Qfor file in `git ls-files | grep -E '\.c|\.h'`; do	\
-		${CHECKPATCH} -f "$$file";			\
+	$Qfor file in `git ls-files | grep -E '\.c|\.h' | grep -v '\.html'`; do	\
+		${CHECKPATCH} -f "$$file";					\
 	done
 
 # Target used to check the coding style of the patches from the upstream branch

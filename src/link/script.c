@@ -1,17 +1,9 @@
 /*
- * Copyright (C) 2017 Antonio Nino Diaz <antonio_nd@outlook.com>
+ * This file is part of RGBDS.
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * Copyright (c) 2017-2018, Antonio Nino Diaz and RGBDS contributors.
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * SPDX-License-Identifier: MIT
  */
 
 #include <stdint.h>
@@ -120,9 +112,9 @@ void script_SetCurrentSectionType(const char *type, uint32_t bank)
 		current_real_bank = bank;
 		return;
 	} else if (strcmp(type, "WRAM0") == 0) {
-		if (bank != 0) {
+		if (bank != 0)
 			errx(1, "Trying to assign a bank number to WRAM0.\n");
-		}
+
 		current_bank = BANK_INDEX_WRAM0;
 		current_real_bank = 0;
 		return;
