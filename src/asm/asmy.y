@@ -1085,10 +1085,10 @@ incbin		: T_POP_INCBIN string {
 ;
 
 charmap		: T_POP_CHARMAP string ',' const {
-			if (($4 & 0xFF) != $4)
-				warning(WARNING_TRUNCATION, "Expression must be 8-bit");
+			if (($4 & 0xFFFF) != $4)
+				warning(WARNING_TRUNCATION, "Expression must be 8-bit or 16-bit");
 
-			if (charmap_Add($2, $4 & 0xFF) == -1)
+			if (charmap_Add($2, $4 & 0xFFFF, (($4 & 0xFF) != $4)) == -1)
 				yyerror("Error parsing charmap. Either you've added too many (%i), or the input character length is too long (%i)' : %s\n", MAXCHARMAPS, CHARMAPLENGTH, strerror(errno));
 		}
 ;

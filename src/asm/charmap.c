@@ -136,7 +136,7 @@ void charmap_InitMain(void)
 	mainCharmap = charmap_New("main", NULL);
 }
 
-int32_t charmap_Add(char *input, uint8_t output)
+int32_t charmap_Add(char *input, uint16_t output, uint8_t isWide)
 {
 	int32_t i;
 	uint8_t v;
@@ -167,6 +167,7 @@ int32_t charmap_Add(char *input, uint8_t output)
 		return charmap->charCount;
 
 	curr_node->code = output;
+	curr_node->isWide = isWide;
 	curr_node->isCode = 1;
 
 	return ++charmap->charCount;
@@ -181,9 +182,10 @@ int32_t charmap_Convert(char **input)
 	char outchar[8];
 
 	int32_t i, match, length;
-	uint8_t v, foundCode;
+	uint8_t v, foundWide;
+	uint16_t foundCode;
 
-	output = malloc(strlen(*input));
+	output = malloc(strlen(*input) * 2);
 	if (output == NULL)
 		fatalerror("Not enough memory for buffer");
 
@@ -207,14 +209,16 @@ int32_t charmap_Convert(char **input)
 
 			if (charnode->isCode) {
 				match = i;
+				foundWide = charnode->isWide;
 				foundCode = charnode->code;
 			}
 		}
 
 		if (match) {
-			output[length] = foundCode;
-
-			length++;
+			if (foundWide) {
+				output[length++] = ( foundCode >> 8 ) & 0xFF;
+			}
+			output[length++] = foundCode & 0xFF;
 		} else {
 			/*
 			 * put a utf-8 character
